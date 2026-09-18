@@ -1,0 +1,40 @@
+name: 微博监控推送
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check-weibo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 运行监控脚本
+        env:
+          WEIBO_COOKIE: ${{ secrets.WEIBO_COOKIE }}
+          WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
+          WXPUSHER_TOPIC_ID: ${{ secrets.WXPUSHER_TOPIC_ID }}
+          WXPUSHER_UIDS: ${{ secrets.WXPUSHER_UIDS }}
+        run: python main.py
+
+      - name: 保存推送记录
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add sent_ids.json
+          git diff --staged --quiet || git commit -m "更新推送记录 [skip ci]"
+          git push
