@@ -9,7 +9,7 @@ WEIBO_UID = "7360795486"
 KEYWORDS = ["孙颖莎", "王楚钦"]
 
 WEIBO_API_URL = f"https://weibo.com/ajax/statuses/mymblog?uid={WEIBO_UID}&page=1&feature=0"
-WXPUSHER_API_URL = "https://wxpusher.zjiecode.com/api/send/message"
+PUSHPLUS_API_URL = "https://www.pushplus.plus/send"
 SENT_RECORD_FILE = "sent_ids.json"
 
 
@@ -66,31 +66,26 @@ def build_weibo_link(mblog):
     return f"https://weibo.com/{WEIBO_UID}/{bid}" if bid else f"https://weibo.com/detail/{mid}"
 
 
-def send_wxpusher(title, content_summary, link, image_urls):
-    app_token = os.environ.get("WXPUSHER_APP_TOKEN", "")
-    topic_id = os.environ.get("WXPUSHER_TOPIC_ID", "")
-    uids_env = os.environ.get("WXPUSHER_UIDS", "")
-
-    md_lines = [f"### {title}", "", content_summary, ""]
+def send_pushplus(title, text, link, image_urls):
+    token = os.environ.get("PUSHPLUS_TOKEN", "")
+    topic = os.environ.get("PUSHPLUS_TOPIC", "")
+    html_parts = [f"<p>{text}</p>"]
     for img in image_urls[:3]:
-        md_lines.append(f"![]({img})")
-    md_lines.append("")
-    md_lines.append(f"[查看原微博]({link})")
-    content_md = "\n".join(md_lines)
-
+        html_parts.append(f'<img src="{img}" style="max-width:100%"/>')
+    html_parts.append(f'<p><a href="{link}">查看原微博</a></p>')
+    content = "".join(html_parts)
     payload = {
-        "appToken": app_token,
-        "content": content_md,
-        "summary": title[:20],
-        "contentType": 3,
-        "topicIds": [int(topic_id)] if topic_id else [],
-        "uids": [u.strip() for u in uids_env.split(",") if u.strip()],
+        "token": token,
+        "title": title,
+        "content": content,
+        "template": "html",
     }
-
-    resp = requests.post(WXPUSHER_API_URL, json=payload, timeout=15)
+    if topic:
+        payload["topic"] = topic
+    resp = requests.post(PUSHPLUS_API_URL, json=payload, timeout=15)
     result = resp.json()
-    if result.get("code") != 1000:
-        print(f"[警告] WxPusher推送失败: {result}")
+    if result.get("code") != 200:
+        print(f"[警告] PushPlus推送失败: {result}")
     else:
         print(f"[成功] 已推送: {title}")
 
@@ -102,11 +97,9 @@ def main():
     except Exception as e:
         print(f"[错误] 抓取微博失败: {e}")
         return
-
     print(f"[调试] 抓到 {len(posts)} 条微博")
     new_sent_ids = set(sent_ids)
     hit_count = 0
-
     for mblog in reversed(posts):
         weibo_id = str(mblog.get("id"))
         if weibo_id in sent_ids:
@@ -120,11 +113,10 @@ def main():
         title = f"乒乓球资讯：{'/'.join(matched_keywords)}"
         link = build_weibo_link(mblog)
         images = extract_images(mblog)
-        send_wxpusher(title, text, link, images)
+        send_pushplus(title, text, link, images)
         new_sent_ids.add(weibo_id)
         hit_count += 1
         time.sleep(1)
-
     save_sent_ids(new_sent_ids)
     print(f"本次检查完成，新增推送 {hit_count} 条。")
 
