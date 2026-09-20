@@ -2,13 +2,11 @@ name: 微博监控推送
 
 on:
   schedule:
-        - cron: "*/30 * * * *"
-    
+    - cron: "0 * * * *"
   workflow_dispatch: {}
-  
   watch:
     types: [started]
-    
+
 permissions:
   contents: write
 
@@ -28,10 +26,10 @@ jobs:
         run: pip install requests
 
       - name: 运行监控脚本
-                env:
-            WEIBO_COOKIE: ${{ secrets.WEIBO_COOKIE }}
-            PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-            PUSHPLUS_TOPIC: ${{ secrets.PUSHPLUS_TOPIC }}
+        env:
+          WEIBO_COOKIE: ${{ secrets.WEIBO_COOKIE }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          PUSHPLUS_TOPIC: ${{ secrets.PUSHPLUS_TOPIC }}
         run: python main.py
 
       - name: 保存推送记录
