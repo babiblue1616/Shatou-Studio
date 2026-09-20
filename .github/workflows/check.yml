@@ -28,11 +28,10 @@ jobs:
         run: pip install requests
 
       - name: 运行监控脚本
-        env:
-          WEIBO_COOKIE: ${{ secrets.WEIBO_COOKIE }}
-          WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
-          WXPUSHER_TOPIC_ID: ${{ secrets.WXPUSHER_TOPIC_ID }}
-          WXPUSHER_UIDS: ${{ secrets.WXPUSHER_UIDS }}
+                env:
+            WEIBO_COOKIE: ${{ secrets.WEIBO_COOKIE }}
+            PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+            PUSHPLUS_TOPIC: ${{ secrets.PUSHPLUS_TOPIC }}
         run: python main.py
 
       - name: 保存推送记录
